@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
 
-  "name": "Modify CSS and HTML",
+  "name": "Booking.com score extractor",
   "version": "0.1.0",
-  "description": "Demo extension",
+  "description": "Booking.com score extractor",
 
   "content_scripts": [{
     "js": ["content.js"],
