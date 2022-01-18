@@ -7,7 +7,7 @@
 
   "content_scripts": [{
     "js": ["content.js"],
-    "matches": ["https://www.booking.com/searchresults.hr*"]
+    "matches": ["https://www.booking.com/searchresults*"]
   }]
 
 }
