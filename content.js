@@ -32,36 +32,7 @@ async function extractScore(url) {
 function extractName(a) {
     return a.children[0].alt
 }
-
-function missingWifiScore(property) {
-    return !('Free WiFi' in property.score);
-}
-
-function wifiScoreLessThan(property, n) {
-    return property.score['Free WiFi'] < n;
-}
-
-function wifiScoreLessThanOverallBy(property, n) {
-    return property.score['Free WiFi'] + n < property.score.Overall;
-}
-
-// Returns a csv from an array of objects with
-// values separated by tabs and rows separated by newlines
-function CSV(array) {
-    // Use first element to choose the keys and the order
-    var keys = Object.keys(array[0]);
-
-    // Build header
-    var result = keys.join("\t") + "\n";
-
-    // Add the rows
-    array.forEach(function(obj){
-        result += keys.map(k => obj[k]).join("\t") + "\n";
-    });
-
-    return result;
-}
-
+document.getElementById('ajaxsrwrap').insertAdjacentHTML('beforeend', `<div id="scores">Loading...</div>`);
 let anchors = document.getElementsByTagName('a');
 let counter = 0
 promises = []
@@ -79,33 +50,40 @@ for (let i = 0, l = anchors.length; i < l; i++) {
     }
 }
 
-document.getElementById('ajaxsrwrap').insertAdjacentHTML('beforeend', `<div id="scores">Loading...</div>`);
 console.log(`Processing ${counter} properties`)
 async function a(){
     await Promise.allSettled(promises)
         .then((promises)=>{
-            let propertiesToPrint=[]
+            let tableElementStyle="border: 1px solid grey; padding: 4px";
+            let tableRows = [`
+                <tr">
+                    <th style="${tableElementStyle}">Name</th>
+                    <th style="${tableElementStyle}">Total</th>
+                    <th style="${tableElementStyle}">Free WiFi</th>
+                    <th style="${tableElementStyle}">Cleanliness</th>
+                    <th style="${tableElementStyle}">Comfort</th>
+                    <th style="${tableElementStyle}">Facilities</th>
+                    <th style="${tableElementStyle}">Location</th>
+                    <th style="${tableElementStyle}">Value for money</th>
+                </tr>`]
             for (const promise of promises) {
-                if (promise.status!=='fulfilled'){
+                if (promise.status !== 'fulfilled') {
                     console.error("There were problems fetching scores")
                 }
                 let property = promise.value
-                let result = []
-                result.push({name: 'Missing WiFi score', value: missingWifiScore(property)})
-                result.push({name: 'WiFi score less than 8.0', value: wifiScoreLessThan(property, 8)})
-                result.push({
-                    name: 'WiFi score less than overall score by more than 0.5',
-                    value: wifiScoreLessThanOverallBy(property, 0.5)
-                })
-                property.result = result
-                let anyMatch = result.reduce(function (res, it) {
-                    return res || it.value
-                }, false);
-                if (anyMatch) {
-                    propertiesToPrint.push(property)
-                }
+                tableRows.push(`<tr style="${tableElementStyle}">
+                    <td style="${tableElementStyle}">${property.name}</td>
+                    <td style="${tableElementStyle}">${property.score["Total"]}</td>
+                    <td style="${tableElementStyle}">${property.score["Free WiFi"]===undefined?'MISSING':property.score["Free WiFi"]}</td>
+                    <td style="${tableElementStyle}">${property.score["Cleanliness"]}</td>
+                    <td style="${tableElementStyle}">${property.score["Comfort"]}</td>
+                    <td style="${tableElementStyle}">${property.score["Facilities"]}</td>
+                    <td style="${tableElementStyle}">${property.score["Location"]}</td>
+                    <td style="${tableElementStyle}">${property.score["Value for money"]}</td>
+                </tr>`)
             }
-            document.getElementById('scores').innerHTML = `${JSON.stringify(propertiesToPrint)}`
+            let result = `<table>${tableRows.join("")}</table>`;
+            document.getElementById('scores').innerHTML = result
         })
 }
 a()
