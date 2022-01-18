@@ -1,34 +1,3 @@
-async function extractScore(url) {
-    const resp = await fetch(url);
-    const text = await resp.text()
-    var parser = new DOMParser();
-    var doc = parser.parseFromString(text, "text/html");
-
-    let score = {}
-    //Overall score
-    let review_score = doc.getElementsByClassName('featured_review_score')
-    let attribute = review_score[0].getAttribute('data-review-score');
-    score['Overall'] = parseFloat(attribute)
-
-    //Score breakdown
-    var element = doc.getElementById('review_list_score_breakdown')
-
-    for (const child of element.children) {
-        name = ''
-        value = 0
-        for (const c of child.children) {
-            if (c.className === 'review_score_name') {
-                name = c.innerHTML
-            }
-            if (c.className === 'review_score_value') {
-                value = parseFloat(c.innerHTML)
-            }
-        }
-        score[name] = value
-    }
-    return score;
-}
-
 function extractName(a) {
     return a.children[0].alt
 }
@@ -41,10 +10,43 @@ for (let i = 0, l = anchors.length; i < l; i++) {
     let url = String(anchors[i]);
     if (url.includes('hotel/hr') && a.children[0].alt != null){
         counter++
-        promises.push(async function extractScoreFromUrl() {
+        promises.push(async function fetchPropertyMetadata() {
+            const resp = await fetch(url);
+            const text = await resp.text()
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(text, "text/html");
+
+            let score = {}
+            //Overall score
+            let review_score = doc.getElementsByClassName('featured_review_score')
+            let attribute = review_score[0].getAttribute('data-review-score');
+            score['Overall'] = parseFloat(attribute)
+
+            //Score breakdown
+            var element = doc.getElementById('review_list_score_breakdown')
+
+            for (const child of element.children) {
+                name = ''
+                value = 0
+                for (const c of child.children) {
+                    if (c.className === 'review_score_name') {
+                        name = c.innerHTML
+                    }
+                    if (c.className === 'review_score_value') {
+                        value = parseFloat(c.innerHTML)
+                    }
+                }
+                score[name] = value
+            }
+            let propertyAddress = doc.getElementById('hotel_address').nextSibling.nextSibling.innerHTML
+            let propertyName = extractName(a);
+            if (score['Overall'] !== score['Total']){
+                console.log(`This is strange, "overall" and "total" are different. Total:${score['Total']}, overall:${score['Overall']}`)
+            }
             return {
-                name: extractName(a),
-                score: await extractScore(url)
+                name: propertyName,
+                score: score,
+                address: propertyAddress
             }
         }())
     }
@@ -58,6 +60,8 @@ async function a(){
             let tableRows = [`
                 <tr">
                     <th style="${tableElementStyle}">Name</th>
+                    <th style="${tableElementStyle}">Address</th>
+                    <th style="${tableElementStyle}">Overall</th>
                     <th style="${tableElementStyle}">Total</th>
                     <th style="${tableElementStyle}">Free WiFi</th>
                     <th style="${tableElementStyle}">Cleanliness</th>
@@ -73,6 +77,8 @@ async function a(){
                 let property = promise.value
                 tableRows.push(`<tr style="${tableElementStyle}">
                     <td style="${tableElementStyle}">${property.name}</td>
+                    <td style="${tableElementStyle}">${property.address}</td>
+                    <td style="${tableElementStyle}">${property.score["Overall"]}</td>
                     <td style="${tableElementStyle}">${property.score["Total"]}</td>
                     <td style="${tableElementStyle}">${property.score["Free WiFi"]===undefined?'MISSING':property.score["Free WiFi"]}</td>
                     <td style="${tableElementStyle}">${property.score["Cleanliness"]}</td>
